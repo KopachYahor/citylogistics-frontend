@@ -118,7 +118,7 @@ html, body {
     justify-content: space-between;
     width: 100%;
     min-height: 100vh;                    
-    background: url(/img/main_img.png) center/cover no-repeat;
+    background: url(../img/main_img.png) center/cover no-repeat;
     padding-top: 160px;                  
     box-sizing: border-box;
     position: relative;
