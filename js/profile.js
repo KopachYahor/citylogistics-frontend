@@ -1,31 +1,38 @@
-// Проверка авторизации на странице профиля
-document.addEventListener('DOMContentLoaded', async () => {
-    const user = await getCurrentUser();
-    
-    if (!user) {
-        window.location.href = '/auth.html';
+// ============================================
+// ПРОФИЛЬ — проверка авторизации и выход
+// ============================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    console.log('Страница профиля загружена');
+    console.log('Токен:', token ? 'есть' : 'нет');
+    console.log('Пользователь:', user);
+
+    // Если нет токена — на главную
+    if (!token) {
+        console.log('Нет авторизации, перенаправляем на главную');
+        window.location.href = '../index.html';
         return;
     }
 
-    // Обработчик кнопки выхода
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', async () => {
-            const { error } = await supabase.auth.signOut();
-            
-            if (error) {
-                alert('Ошибка при выходе: ' + error.message);
-            } else {
-                window.location.href = '/index.html';
-            }
-        });
+    // Обновляем иконку профиля
+    if (typeof updateProfileIcon === 'function') {
+        updateProfileIcon(true);
     }
 
-    // Обработчик кнопки сохранения данных
-    const saveBtn = document.getElementById('saveBtn');
-    if (saveBtn) {
-        saveBtn.addEventListener('click', () => {
-            alert('Данные сохранены!');
+    // Кнопка выхода (если нет своего logout — встроенный)
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+            if (typeof logout === 'function') {
+                logout();
+            } else {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '../index.html';
+            }
         });
     }
 });
