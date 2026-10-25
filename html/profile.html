@@ -146,6 +146,17 @@
             .card { padding: 15px; }
             .card-title { font-size: 18px; }
         }
+        .order-history-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(255, 255, 255, 0.5);
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+        }
+
     </style>
 </head>
 <body class="page-profile">
@@ -352,33 +363,10 @@
     <!-- Блок с историей заказов -->
     <div class="order-history" id="orderHistory" style="display: none;">
         <h2>История заказов</h2>
-        <div class="order-item">
-            <div class="order-info">
-                <h3>Заказ №12345</h3>
-                <p>Минск → Гомель • 15.02.2026</p>
+        <div id="orderHistoryList">
+            <div class="order-history-empty">
+                <p>Загрузка...</p>
             </div>
-            <span class="order-status status-delivered">Доставлен</span>
-        </div>
-        <div class="order-item">
-            <div class="order-info">
-                <h3>Заказ №12344</h3>
-                <p>Брест → Витебск • 10.02.2026</p>
-            </div>
-            <span class="order-status status-delivered">Доставлен</span>
-        </div>
-        <div class="order-item">
-            <div class="order-info">
-                <h3>Заказ №12343</h3>
-                <p>Гродно → Могилев • 05.02.2026</p>
-            </div>
-            <span class="order-status status-in-transit">В пути</span>
-        </div>
-        <div class="order-item">
-            <div class="order-info">
-                <h3>Заказ №12342</h3>
-                <p>Минск → Брест • 01.02.2026</p>
-            </div>
-            <span class="order-status status-pending">Ожидает</span>
         </div>
     </div>
 </div>
