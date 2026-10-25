@@ -7,6 +7,7 @@ const API_URL = 'http://localhost:8080/api';
 // АВТОПОДСВЕТКА АКТИВНОГО ПУНКТА МЕНЮ
 // ============================================
 function setActiveNavLink() {
+
     const currentPath = window.location.pathname;
     const navLinks = document.querySelectorAll('.navbar-menu li a');
 
@@ -29,7 +30,38 @@ function setActiveNavLink() {
         }
     });
 }
+// ============================================
+// АДАПТАЦИЯ МЕНЮ ПОД РОЛЬ
+// ============================================
+function adaptMenuForRole() {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user.role !== 'DRIVER') return;
 
+    document.querySelectorAll('.navbar-menu li a').forEach(link => {
+        const href = link.getAttribute('href') || '';
+        if (href.includes('order.html') ||
+            href.includes('order-status.html') ||
+            href.includes('feedback.html')) {
+            const li = link.closest('li');
+            if (li) li.style.display = 'none';
+        }
+    });
+}
+
+// ============================================
+// РЕДИРЕКТ ВОДИТЕЛЯ С КЛИЕНТСКИХ СТРАНИЦ
+// ============================================
+function redirectDriverFromClientPages() {
+    const u = JSON.parse(localStorage.getItem('user') || '{}');
+    if (u.role !== 'DRIVER') return;
+
+    const path = window.location.pathname;
+    if (path.endsWith('profile.html') ||
+        path.endsWith('order-status.html') ||
+        path.endsWith('order.html')) {
+        window.location.href = 'driver-dashboard.html';
+    }
+}
 // ============================================
 // ЗАГОЛОВКИ С ТОКЕНОМ
 // ============================================
@@ -165,41 +197,40 @@ window.showProfileMenu = function() {
     const menu = document.createElement('div');
     menu.className = 'profile-menu';
     menu.innerHTML = `
-      <div class="profile-menu-content">
-        <div class="profile-header">
-          <div class="profile-avatar">
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-              <circle cx="20" cy="20" r="20" fill="#667eea"/>
-              <path d="M20 10C23.31 10 26 12.69 26 16C26 19.31 23.31 22 20 22C16.69 22 14 19.31 14 16C14 12.69 16.69 10 20 10ZM20 25C26.63 25 32 27.685 32 31V34H8V31C8 27.685 13.37 25 20 25Z" fill="white"/>
-            </svg>
-          </div>
-          <div class="profile-info">
-            <h4>Привет, <span id="profileName">Пользователь</span>!</h4>
-            <p id="profileEmail">user@example.com</p>
-          </div>
-        </div>
-        <div class="profile-menu-items">
-          <a href="../html/profile.html" class="menu-item">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="#888"/>
-            </svg>
-            <span>Мой профиль</span>
-          </a>
-          <button class="menu-item" id="menuSettings">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M19.14 12.94C19.18 12.74 19.2 12.54 19.2 12.34C19.2 12.14 19.18 11.94 19.14 11.74L21.16 9.98C21.3 9.85 21.34 9.65 21.26 9.48L19.38 6.19C19.3 6.02 19.12 5.92 18.94 5.95L16.64 6.49C16.24 6.1 15.78 5.78 15.28 5.54L14.94 3.18C14.92 3.01 14.78 2.88 14.6 2.88H9.4C9.22 2.88 9.08 3.01 9.06 3.18L8.72 5.54C8.22 5.78 7.76 6.1 7.36 6.49L5.06 5.95C4.88 5.92 4.7 6.02 4.62 6.19L2.74 9.48C2.66 9.65 2.7 9.85 2.84 9.98L4.86 11.74C4.82 11.94 4.8 12.14 4.8 12.34C4.8 12.54 4.82 12.74 4.86 12.94L2.84 14.7C2.7 14.83 2.66 15.03 2.74 15.2L4.62 18.49C4.7 18.66 4.88 18.76 5.06 18.73L7.36 18.19C7.76 18.58 8.22 18.9 8.72 19.14L9.06 21.5C9.08 21.67 9.22 21.8 9.4 21.8H14.6C14.78 21.8 14.92 21.67 14.94 21.5L15.28 19.14C15.78 18.9 16.24 18.58 16.64 18.19L18.94 18.73C19.12 18.76 19.3 18.66 19.38 18.49L21.26 15.2C21.34 15.03 21.3 14.83 21.16 14.7L19.14 12.94ZM12 15.6C10.06 15.6 8.48 14.02 8.48 12.08C8.48 10.14 10.06 8.56 12 8.56C13.94 8.56 15.52 10.14 15.52 12.08C15.52 14.02 13.94 15.6 12 15.6Z" fill="#888"/>
-            </svg>
-            <span>Настройки</span>
-          </button>
-          <button class="menu-item logout-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M17 7L15.59 8.41L18.17 11H8V13H18.17L15.59 15.59L17 17L22 12L17 7ZM4 5H12V3H4C2.9 3 2 3.9 2 5V19C2 20.1 2.9 21 4 21H12V19H4V5Z" fill="#888"/>
-            </svg>
-            <span>Выйти</span>
-          </button>
-        </div>
+  <div class="profile-menu-content">
+    <div class="profile-header">
+      <div class="profile-avatar">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="20" fill="#667eea"/>
+          <path d="M20 10C23.31 10 26 12.69 26 16C26 19.31 23.31 22 20 22C16.69 22 14 19.31 14 16C14 12.69 16.69 10 20 10ZM20 25C26.63 25 32 27.685 32 31V34H8V31C8 27.685 13.37 25 20 25Z" fill="white"/>
+        </svg>
       </div>
-    `;
+      <div class="profile-info">
+        <h4>Привет, <span id="profileName">Пользователь</span>!</h4>
+        <p id="profileEmail">user@example.com</p>
+      </div>
+    </div>
+    <div class="profile-menu-items">
+      <a href="../html/profile.html" class="menu-item" id="menuProfile">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="#888"/>
+        </svg>
+        <span id="menuProfileLabel">Мой профиль</span>
+      </a>
+      <button class="menu-item" id="menuSettings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M19.14 12.94C19.18 12.74 19.2 12.54 19.2 12.34C19.2 12.14 19.18 11.94 19.14 11.74L21.16 9.98C21.3 9.85 21.34 9.65 21.26 9.48L19.38 6.19C19.3 6.02 19.12 5.92 18.94 5.95L16.64 6.49C16.24 6.1 15.78 5.78 15.28 5.54L14.94 3.18C14.92 3.01 14.78 2.88 14.6 2.88H9.4C9.22 2.88 9.08 3.01 9.06 3.18L8.72 5.54C8.22 5.78 7.76 6.1 7.36 6.49L5.06 5.95C4.88 5.92 4.7 6.02 4.62 6.19L2.74 9.48C2.66 9.65 2.7 9.85 2.84 9.98L4.86 11.74C4.82 11.94 4.8 12.14 4.8 12.34C4.8 12.54 4.82 12.74 4.86 12.94L2.84 14.7C2.7 14.83 2.66 15.03 2.74 15.2L4.62 18.49C4.7 18.66 4.88 18.76 5.06 18.73L7.36 18.19C7.76 18.58 8.22 18.9 8.72 19.14L9.06 21.5C9.08 21.67 9.22 21.8 9.4 21.8H14.6C14.78 21.8 14.92 21.67 14.94 21.5L15.28 19.14C15.78 18.9 16.24 18.58 16.64 18.19L18.94 18.73C19.12 18.76 19.3 18.66 19.38 18.49L21.26 15.2C21.34 15.03 21.3 14.83 21.16 14.7L19.14 12.94ZM12 15.6C10.06 15.6 8.48 14.02 8.48 12.08C8.48 10.14 10.06 8.56 12 8.56C13.94 8.56 15.52 10.14 15.52 12.08C15.52 14.02 13.94 15.6 12 15.6Z" fill="#888"/>
+        </svg>
+        <span>Настройки</span>
+      </button>
+      <button class="menu-item logout-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M17 7L15.59 8.41L18.17 11H8V13H18.17L15.59 15.59L17 17L22 12L17 7ZM4 5H12V3H4C2.9 3 2 3.9 2 5V19C2 20.1 2.9 21 4 21H12V19H4V5Z" fill="#888"/>
+        </svg>
+        <span>Выйти</span>
+      </button>
+    </div>
+  </div>`;
 
     document.body.appendChild(menu);
 
@@ -209,6 +240,14 @@ window.showProfileMenu = function() {
 
     if (profileName && user.name) profileName.textContent = user.name;
     if (profileEmail && user.email) profileEmail.textContent = user.email;
+
+    // Подменяем пункт под роль
+    const profileLink = document.getElementById('menuProfile');
+    const profileLabel = document.getElementById('menuProfileLabel');
+    if (profileLink && user.role === 'DRIVER') {
+        profileLink.href = '../html/driver-dashboard.html';
+        if (profileLabel) profileLabel.textContent = 'Кабинет водителя';
+    }
 
     setTimeout(() => {
         function closeMenu(e) {
@@ -237,7 +276,6 @@ window.showProfileMenu = function() {
         });
     }
 };
-
 // ============================================
 // СООБЩЕНИЯ
 // ============================================
@@ -330,6 +368,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 const successOverlay = document.getElementById('successOverlay');
                 if (successOverlay) successOverlay.style.display = 'flex';
 
+// Узнаём роль через /api/auth/me
+                let redirectUrl = 'html/profile.html';
+                try {
+                    const meResp = await fetch(`${API_URL}/auth/me`, {
+                        headers: { 'Authorization': `Bearer ${loginData.token}` }
+                    });
+                    if (meResp.ok) {
+                        const me = await meResp.json();
+                        localStorage.setItem('user', JSON.stringify({
+                            email: me.email,
+                            name: me.username || me.email.split('@')[0],
+                            role: me.role,
+                            driverId: me.driverId
+                        }));
+                        if (me.role === 'DRIVER') {
+                            redirectUrl = 'html/driver-dashboard.html';
+                        }
+                    }
+                } catch (e) {
+                    console.error('Не удалось получить /auth/me:', e);
+                }
+
                 setTimeout(() => {
                     const authModal = document.getElementById('authModal');
                     if (authModal) {
@@ -337,7 +397,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         document.body.style.overflow = '';
                     }
                     if (successOverlay) successOverlay.style.display = 'none';
-                    window.location.href = 'html/profile.html';
+                    window.location.href = redirectUrl;
                 }, 2000);
 
             } catch (error) {
@@ -381,7 +441,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 const data = await response.json();
                 console.log('✅ Login:', data);
-
                 if (response.ok && data.token) {
                     showMessage('Вход выполнен успешно!', 'success');
 
@@ -391,13 +450,35 @@ document.addEventListener('DOMContentLoaded', function() {
                         name: email.split('@')[0]
                     }));
 
+                    // Узнаём роль через /api/auth/me
+                    let redirectUrl = 'html/profile.html';
+                    try {
+                        const meResp = await fetch(`${API_URL}/auth/me`, {
+                            headers: { 'Authorization': `Bearer ${data.token}` }
+                        });
+                        if (meResp.ok) {
+                            const me = await meResp.json();
+                            localStorage.setItem('user', JSON.stringify({
+                                email: me.email,
+                                name: me.username || me.email.split('@')[0],
+                                role: me.role,
+                                driverId: me.driverId
+                            }));
+                            if (me.role === 'DRIVER') {
+                                redirectUrl = 'html/driver-dashboard.html';
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Не удалось получить /auth/me:', e);
+                    }
+
                     setTimeout(() => {
                         const authModal = document.getElementById('authModal');
                         if (authModal) {
                             authModal.style.display = 'none';
                             document.body.style.overflow = '';
                         }
-                        window.location.href = 'html/profile.html';
+                        window.location.href = redirectUrl;
                     }, 1500);
                 } else {
                     showMessage(data.message || 'Неверный email или пароль', 'error');
@@ -493,10 +574,16 @@ document.addEventListener('DOMContentLoaded', function() {
             strengthText.style.color = strength.color;
         });
     }
-
     // --- Подсветка активного меню ---
     setActiveNavLink();
+
+    // --- Адаптация меню под роль ---
+    adaptMenuForRole();
+
+    // --- Редирект водителя с клиентских страниц ---
+    redirectDriverFromClientPages();
 });
+
 
 // ============================================
 // ВЫХОД
@@ -535,6 +622,29 @@ async function getUserData() {
 document.addEventListener('DOMContentLoaded', function() {
     const isProfilePage = document.body.classList.contains('page-profile');
     if (!isProfilePage) return;
+
+
+    // Загрузка статистики заказов
+    (async function loadOrderStats() {
+        const ordersCount = document.getElementById('ordersCount');
+        const completedOrders = document.getElementById('completedOrders');
+        const activeOrders = document.getElementById('activeOrders');
+        if (!ordersCount) return;
+
+        try {
+            const resp = await fetch(`${API_URL}/orders/my`, { headers: authHeaders() });
+            if (!resp.ok) return;
+            const orders = await resp.json();
+            if (!Array.isArray(orders)) return;
+
+            ordersCount.textContent = orders.length;
+            completedOrders.textContent = orders.filter(o => o.status === 'DELIVERED').length;
+            activeOrders.textContent = orders.filter(o =>
+                ['NEW','ACCEPTED','IN_TRANSIT','ARRIVED'].includes(o.status)).length;
+        } catch (e) {
+            console.error('Ошибка статистики:', e);
+        }
+    })();
 
     const token = localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -632,10 +742,54 @@ document.addEventListener('DOMContentLoaded', function() {
     const historyBtn = document.getElementById('historyBtn');
     const orderHistory = document.getElementById('orderHistory');
     if (historyBtn && orderHistory) {
-        historyBtn.addEventListener('click', function() {
+        let loaded = false;
+
+        historyBtn.addEventListener('click', async function() {
             const isHidden = orderHistory.style.display === 'none' || !orderHistory.style.display;
             orderHistory.style.display = isHidden ? 'block' : 'none';
             historyBtn.querySelector('span').textContent = isHidden ? 'Скрыть историю' : 'История заказов';
+
+            // Загружаем один раз при первом открытии
+            if (isHidden && !loaded) {
+                loaded = true;
+                const list = document.getElementById('orderHistoryList');
+                try {
+                    const resp = await fetch(`${API_URL}/orders/my`, { headers: authHeaders() });
+                    if (!resp.ok) throw new Error('status ' + resp.status);
+                    const orders = await resp.json();
+
+                    if (!Array.isArray(orders) || orders.length === 0) {
+                        list.innerHTML = `<div class="order-history-empty"><p>У вас пока нет заказов</p></div>`;
+                        return;
+                    }
+
+                    const statusMap = {
+                        'NEW':        { label: 'Ожидает', cls: 'status-pending' },
+                        'ACCEPTED':   { label: 'Принят',  cls: 'status-pending' },
+                        'IN_TRANSIT': { label: 'В пути',  cls: 'status-in-transit' },
+                        'ARRIVED':    { label: 'Прибыл',  cls: 'status-in-transit' },
+                        'DELIVERED':  { label: 'Доставлен', cls: 'status-delivered' },
+                        'CANCELLED':  { label: 'Отменён', cls: 'status-pending' }
+                    };
+
+                    list.innerHTML = orders.map(o => {
+                        const info = statusMap[o.status] || { label: o.status, cls: 'status-pending' };
+                        const date = o.createdAt ? new Date(o.createdAt).toLocaleDateString('ru-RU') : '';
+                        return `
+                        <div class="order-item">
+                            <div class="order-info">
+                                <h3>Заказ №${o.id}</h3>
+                                <p>${o.fromAddress || ''} → ${o.toAddress || ''}${date ? ' • ' + date : ''}</p>
+                            </div>
+                            <span class="order-status ${info.cls}">${info.label}</span>
+                        </div>
+                    `;
+                    }).join('');
+                } catch (e) {
+                    console.error('Ошибка загрузки истории:', e);
+                    list.innerHTML = `<div class="order-history-empty"><p>Не удалось загрузить историю</p></div>`;
+                }
+            }
         });
     }
 
@@ -848,10 +1002,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (endInput) endInput.value = order.toAddress || '';
 
             const statusMap = {
-                'NEW':        { label: 'Ожидает водителя', percent: 20 },
-                'PROCESSING': { label: 'В пути',           percent: 60 },
-                'DELIVERED':  { label: 'Доставлен',        percent: 100 },
-                'CANCELLED':  { label: 'Отменён',          percent: 0 }
+                'NEW':        { label: 'Ожидает водителя', percent: 10 },
+                'ACCEPTED':   { label: 'Водитель назначен', percent: 25 },
+                'IN_TRANSIT': { label: 'В пути',            percent: 50 },
+                'ARRIVED':    { label: 'Прибыл',            percent: 75 },
+                'DELIVERED':  { label: 'Доставлен',         percent: 100 },
+                'CANCELLED':  { label: 'Отменён',           percent: 0 }
             };
 
             const info = statusMap[order.status] || { label: 'Статус неизвестен', percent: 0 };
