@@ -302,6 +302,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Регистрация ---
     const registerForm = document.getElementById('registerFormElement');
     if (registerForm) {
+        // Поле телефона показываем только водителю: API требует phone для роли DRIVER
+        const roleSelect = document.getElementById('regRole');
+        const phoneGroup = document.getElementById('regPhoneGroup');
+        if (roleSelect && phoneGroup) {
+            roleSelect.addEventListener('change', () => {
+                phoneGroup.style.display = roleSelect.value === 'DRIVER' ? '' : 'none';
+            });
+        }
+
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -309,9 +318,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const email = document.getElementById('regEmail')?.value;
             const password = document.getElementById('regPassword')?.value;
             const confirmPassword = document.getElementById('regConfirmPassword')?.value;
+            const role = document.getElementById('regRole')?.value || 'CLIENT';
+            const phone = document.getElementById('regPhone')?.value?.trim();
 
             if (!name || !email || !password) {
                 showMessage('Заполните все поля!', 'error');
+                return;
+            }
+            if (role === 'DRIVER' && !phone) {
+                showMessage('Водителю нужно указать телефон!', 'error');
                 return;
             }
             if (password !== confirmPassword) {
@@ -336,13 +351,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 const registerResp = await fetch(`${API_URL}/auth/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                    // API ждёт name, email, password, role, а для водителя ещё phone (RegisterRequest)
+                    body: JSON.stringify({ name, email, password, role, phone: role === 'DRIVER' ? phone : null })
                 });
-                const registerData = await registerResp.json();
+                const registerData = await registerResp.json().catch(() => ({}));
                 console.log('✅ Register:', registerData);
 
                 if (!registerResp.ok) {
-                    showMessage(registerData.message || 'Ошибка регистрации', 'error');
+                    // ошибки API приходят в поле error
+                    showMessage(registerData.error || 'Ошибка регистрации', 'error');
                     return;
                 }
 
@@ -356,7 +373,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('✅ Login after register:', loginData);
 
                 if (!loginResp.ok || !loginData.token) {
-                    showMessage(loginData.message || 'Вход не удался', 'error');
+                    showMessage(loginData.error || 'Вход не удался', 'error');
                     return;
                 }
 
@@ -481,7 +498,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         window.location.href = redirectUrl;
                     }, 1500);
                 } else {
-                    showMessage(data.message || 'Неверный email или пароль', 'error');
+                    showMessage(data.error || 'Неверный email или пароль', 'error');
                 }
             } catch (error) {
                 console.error('❌ Ошибка:', error);
@@ -913,7 +930,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert('Заказ сохранён!');
                     window.location.href = '../html/order-status.html';
                 } else {
-                    alert('Ошибка: ' + (data.message || 'не удалось сохранить заказ'));
+                    alert('Ошибка: ' + (data.error || 'не удалось сохранить заказ'));
                 }
             } catch (error) {
                 console.error('❌ Ошибка:', error);

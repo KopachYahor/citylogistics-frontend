@@ -1015,7 +1015,8 @@ dialog::backdrop {
     opacity: 0.7;
 }
 
-.input-with-icon input {
+.input-with-icon input,
+.input-with-icon select {
     width: 100%;
     padding: 14px 16px 14px 48px;
     border: 2px solid rgba(255,255,255,0.1);
@@ -1032,7 +1033,13 @@ dialog::backdrop {
     color: rgba(255,255,255,0.4);
 }
 
-.input-with-icon input:focus {
+/* Пункты выпадающего списка браузер рисует на светлом фоне — делаем текст тёмным */
+.input-with-icon select option {
+    color: #222;
+}
+
+.input-with-icon input:focus,
+.input-with-icon select:focus {
     outline: none;
     border-color: #667eea;
     background: rgba(255,255,255,0.08);
