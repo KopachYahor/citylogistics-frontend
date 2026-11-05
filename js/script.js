@@ -65,6 +65,17 @@ function redirectDriverFromClientPages() {
 // ============================================
 // ЗАГОЛОВКИ С ТОКЕНОМ
 // ============================================
+// Экранирует текст перед вставкой через innerHTML. Без этого адрес вида
+// <img src=x onerror="..."> выполнился бы как скрипт и мог прочитать токен из localStorage (XSS).
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function authHeaders() {
     const token = localStorage.getItem('token');
     return token
@@ -796,7 +807,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="order-item">
                             <div class="order-info">
                                 <h3>Заказ №${o.id}</h3>
-                                <p>${o.fromAddress || ''} → ${o.toAddress || ''}${date ? ' • ' + date : ''}</p>
+                                <p>${escapeHtml(o.fromAddress)} → ${escapeHtml(o.toAddress)}${date ? ' • ' + date : ''}</p>
                             </div>
                             <span class="order-status ${info.cls}">${info.label}</span>
                         </div>
