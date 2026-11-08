@@ -397,7 +397,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (successOverlay) successOverlay.style.display = 'flex';
 
 // Узнаём роль через /api/auth/me
-                let redirectUrl = 'html/profile.html';
+// Определяем, где мы находимся, чтобы правильно построить путь
+                const isInsideHtml = window.location.pathname.includes('/html/');
+                const basePrefix = isInsideHtml ? '' : 'html/';
+
+                let redirectUrl = basePrefix + 'profile.html';
+                let driverRedirectUrl = basePrefix + 'driver-dashboard.html';
                 try {
                     const meResp = await fetch(`${API_URL}/auth/me`, {
                         headers: { 'Authorization': `Bearer ${loginData.token}` }
@@ -411,7 +416,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             driverId: me.driverId
                         }));
                         if (me.role === 'DRIVER') {
-                            redirectUrl = 'html/driver-dashboard.html';
+                            redirectUrl = driverRedirectUrl;
                         }
                     }
                 } catch (e) {
@@ -478,8 +483,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         name: email.split('@')[0]
                     }));
 
-                    // Узнаём роль через /api/auth/me
-                    let redirectUrl = 'html/profile.html';
+// Узнаём роль через /api/auth/me
+                    const isInsideHtml = window.location.pathname.includes('/html/');
+                    const basePrefix = isInsideHtml ? '' : 'html/';
+
+                    let redirectUrl = basePrefix + 'profile.html';
+                    let driverRedirectUrl = basePrefix + 'driver-dashboard.html';
                     try {
                         const meResp = await fetch(`${API_URL}/auth/me`, {
                             headers: { 'Authorization': `Bearer ${data.token}` }
@@ -493,7 +502,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 driverId: me.driverId
                             }));
                             if (me.role === 'DRIVER') {
-                                redirectUrl = 'html/driver-dashboard.html';
+                                redirectUrl = driverRedirectUrl;
                             }
                         }
                     } catch (e) {
