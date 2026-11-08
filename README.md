@@ -2,7 +2,7 @@
 
 Клиентская часть проекта CityLogistics: HTML/CSS и Vanilla JS, запросы к API через `fetch`.
 Фронтенд общается **только с core** (`http://localhost:8080/api`). Бэкенд, схема проекта и
-инструкция запуска описаны в README [citylogistics-core](../citylogistics-core).
+инструкция запуска описаны в README [citylogistics-core](https://github.com/KopachYahor/citylogistics-core).
 
 ## Страницы
 
@@ -34,4 +34,5 @@ JWT хранится в `localStorage` и передаётся в заголов
 3. **Токен хранится в `localStorage`.** Данные с сервера экранируются перед вставкой
    в страницу (`escapeHtml`), но если XSS всё же появится, скрипт сможет прочитать токен.
    Надёжнее — cookie с флагом `HttpOnly`, это потребует изменений на бэкенде.
-4. `html/driver-form.html` — заглушка.
+4. **На сайте нет кнопки отмены заказа.** API её поддерживает (`PATCH /api/orders/{id}/cancel`), но вызвать можно только напрямую, например через `curl`.
+5. `html/driver-form.html` — заглушка, на неё ссылается `information.html`.
