@@ -366,7 +366,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: JSON.stringify({ name, email, password, role, phone: role === 'DRIVER' ? phone : null })
                 });
                 const registerData = await registerResp.json().catch(() => ({}));
-                console.log('✅ Register:', registerData);
 
                 if (!registerResp.ok) {
                     // ошибки API приходят в поле error
@@ -381,7 +380,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: JSON.stringify({ email, password })
                 });
                 const loginData = await loginResp.json();
-                console.log('✅ Login after register:', loginData);
 
                 if (!loginResp.ok || !loginData.token) {
                     showMessage(loginData.error || 'Вход не удался', 'error');
@@ -434,7 +432,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 2000);
 
             } catch (error) {
-                console.error('❌ Ошибка:', error);
+                console.error('Ошибка:', error);
                 showMessage('Ошибка подключения к серверу. Проверьте, что Spring Boot работает на 8080', 'error');
             } finally {
                 if (btnText) btnText.style.display = 'block';
@@ -473,7 +471,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: JSON.stringify({ email, password })
                 });
                 const data = await response.json();
-                console.log('✅ Login:', data);
                 if (response.ok && data.token) {
                     showMessage('Вход выполнен успешно!', 'success');
 
@@ -521,7 +518,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     showMessage(data.error || 'Неверный email или пароль', 'error');
                 }
             } catch (error) {
-                console.error('❌ Ошибка:', error);
+                console.error('Ошибка:', error);
                 showMessage('Ошибка подключения к серверу', 'error');
             } finally {
                 if (btnText) btnText.style.display = 'block';
@@ -944,7 +941,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 const data = await response.json();
-                console.log('✅ POST /orders:', data);
 
                 if (response.ok) {
                     alert('Заказ сохранён!');
@@ -953,7 +949,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert('Ошибка: ' + (data.error || 'не удалось сохранить заказ'));
                 }
             } catch (error) {
-                console.error('❌ Ошибка:', error);
+                console.error('Ошибка:', error);
                 alert('Ошибка подключения к серверу');
             } finally {
                 saveBtn.disabled = false;
@@ -1061,7 +1057,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
     } catch (error) {
-        console.error('❌ Ошибка загрузки заказов:', error);
+        console.error('Ошибка загрузки заказов:', error);
     }
 });
 
