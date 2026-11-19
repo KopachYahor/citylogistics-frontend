@@ -1846,7 +1846,6 @@ dialog::backdrop {
 @media (max-width: 768px) {
     .navbar-wrap { padding: 0 15px; }
     .navbar-logo-link svg { width: 180px; height: auto; }
-    .navbar { height: 50px; padding: 0 15px; }
     .navbar-profile svg { width: 28px; height: 28px; }
 
     .main_page { padding-top: 140px; background-position: 30% center; }
@@ -1968,7 +1967,6 @@ dialog::backdrop {
 @media (max-width: 480px) {
     .navbar-wrap { padding: 0 10px; }
     .navbar-logo-link svg { width: 180px; }
-    .navbar-menu li a { font-size: 11px; }
     .navbar-profile svg { width: 24px; height: 24px; }
 
     .main_page { padding-top: 120px; background-position: 40% center; }
@@ -2017,7 +2015,6 @@ dialog::backdrop {
 
 @media (max-width: 360px) {
     .navbar-logo-link svg { width: 140px; }
-    .navbar-menu li a { font-size: 10px; }
     .navbar-profile svg { width: 20px; height: 20px; }
     .main_text h1 { font-size: 20px; line-height: 26px; }
     .page-title { font-size: 24px; }
