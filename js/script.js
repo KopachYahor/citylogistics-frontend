@@ -993,6 +993,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
 
+        // Новые сверху: бэкенд отдаёт заказы без сортировки, а ниже выбирается первый
+        orders.sort((a, b) => b.id - a.id);
+
         // Заполняем select
         orderSelect.innerHTML = '<option value="">Выберите заказ</option>';
         orders.forEach(o => {
@@ -1037,7 +1040,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (progressFill) progressFill.style.width = info.percent + '%';
         });
 
-        // ★★★ НОВОЕ: автовыбор первого заказа при загрузке страницы ★★★
+        // Сразу показываем самый новый заказ
         if (orders.length > 0) {
             orderSelect.value = orders[0].id;
             orderSelect.dispatchEvent(new Event('change'));
