@@ -3,6 +3,9 @@
 // ============================================
 const API_URL = 'http://localhost:8080/api';
 
+// Расчёта стоимости пока нет: у любого заказа фиксированный тариф (показан на order.html)
+const ORDER_PRICE = 300;
+
 // Статусы заказа (OrderStatus на бэкенде) по-русски
 const STATUS_LABELS = {
     NEW: 'Ожидает водителя',
@@ -905,26 +908,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const pickupAddress = document.getElementById('pickupAddress')?.value?.trim();
             const deliveryAddress = document.getElementById('deliveryAddress')?.value?.trim();
-            const recipientPhone = document.getElementById('recipientPhone')?.value?.trim();
-            const cargoType = document.getElementById('cargoType')?.value?.trim();
 
             if (!pickupAddress || !deliveryAddress) {
                 alert('Заполните адреса отправления и доставки');
                 return;
             }
 
-            // Бэк ждёт такой формат (см. CreateOrderRequest.java)
+            // API принимает только эти три поля (CreateOrderRequest). Остальные поля формы
+            // (телефон, дата, груз) бэкенд пока не хранит, поэтому их не отправляем
             const orderData = {
                 fromAddress: pickupAddress,
                 toAddress: deliveryAddress,
-                price: 300,
-                cargoType: cargoType || 'прочее',
-                recipientPhone: recipientPhone || '',
-                deliveryDate: document.getElementById('deliveryDate')?.value || null,
-                deliveryTime: document.getElementById('deliveryTime')?.value || null,
-                weight: document.getElementById('weight')?.value || null,
-                places: document.getElementById('places')?.value || null,
-                conditions: document.getElementById('conditions')?.value || null
+                price: ORDER_PRICE
             };
 
             saveBtn.disabled = true;

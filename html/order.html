@@ -6,6 +6,8 @@
     <link rel="stylesheet" href="../css/style.css">
     <title>CityLogistics - Оставить заявку</title>
     <style>
+        .order-price-note { margin: 8px 0 16px; font-size: 16px; color: rgba(255, 255, 255, 0.8); }
+        .order-price-note b { color: #D7B95E; }
         .track-modal-overlay {
             position: fixed;
             top: 0;
@@ -299,7 +301,7 @@
             <div class="form-group">
                 <label>Откуда забрать груз</label>
                 <div class="input-with-arrow">
-                    <input type="text" id="pickupAddress" placeholder="Полный адрес" class="form-input">
+                    <input type="text" id="pickupAddress" placeholder="Полный адрес" class="form-input" maxlength="500">
                     <svg class="input-arrow" width="24" height="24" viewBox="0 0 24 24" fill="none">
                         <path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2"/>
                     </svg>
@@ -309,7 +311,7 @@
             <div class="form-group">
                 <label>Адрес доставки</label>
                 <div class="input-with-arrow">
-                    <input type="text" id="deliveryAddress" placeholder="Полный адрес" class="form-input">
+                    <input type="text" id="deliveryAddress" placeholder="Полный адрес" class="form-input" maxlength="500">
                     <svg class="input-arrow" width="24" height="24" viewBox="0 0 24 24" fill="none">
                         <path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2"/>
                     </svg>
@@ -353,6 +355,7 @@
                 <input type="text" id="conditions" placeholder="Условия доставки" class="form-input">
             </div>
 
+            <p class="order-price-note">Стоимость доставки: <b>300 BYN</b> (фиксированный тариф)</p>
             <button class="btn btn-save" id="saveOrderBtn">Сохранить данные</button>
         </div>
 
