@@ -3,6 +3,16 @@
 // ============================================
 const API_URL = 'http://localhost:8080/api';
 
+// Статусы заказа (OrderStatus на бэкенде) по-русски
+const STATUS_LABELS = {
+    NEW: 'Ожидает водителя',
+    ACCEPTED: 'Водитель назначен',
+    IN_TRANSIT: 'В пути',
+    ARRIVED: 'Прибыл',
+    DELIVERED: 'Доставлен',
+    CANCELLED: 'Отменён'
+};
+
 // Страницы лежат в корне (index.html) и в html/. Пути строим от текущей страницы,
 // чтобы сайт работал, даже если открыт не из корня сервера
 const ROOT = window.location.pathname.includes('/html/') ? '../' : '';
