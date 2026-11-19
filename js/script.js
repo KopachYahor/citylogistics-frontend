@@ -1057,7 +1057,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             const info = statusMap[order.status] || { label: 'Статус неизвестен', percent: 0 };
 
-            if (statusText) statusText.textContent = 'Заказ ' + info.label.toLowerCase();
+            // «Статус: водитель назначен», а не «Заказ водитель назначен»
+            if (statusText) statusText.textContent = 'Статус: ' + info.label.toLowerCase();
             if (progressText) progressText.textContent = info.label;
             if (progressFill) progressFill.style.width = info.percent + '%';
         });
