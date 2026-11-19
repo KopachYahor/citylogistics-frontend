@@ -157,7 +157,11 @@ window.updateProfileIcon = function(isLoggedIn) {
 // ============================================
 function openModal(defaultTab = 'login') {
     const authModal = document.getElementById('authModal');
-    if (!authModal) return;
+    if (!authModal) {
+        // На этой странице окна входа нет: открываем его на главной
+        window.location.href = pageUrl('index.html') + '#' + defaultTab;
+        return;
+    }
     document.body.style.overflow = 'hidden';
     authModal.style.display = 'block';
     switchTab(defaultTab);
@@ -591,6 +595,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const authModal = document.getElementById('authModal');
     const closeModalBtn = document.getElementById('closeModal');
 
+    // Пришли с другой страницы за входом или регистрацией (index.html#login)
+    const hashTab = window.location.hash.slice(1);
+    if (authModal && (hashTab === 'login' || hashTab === 'register')) {
+        history.replaceState(null, '', window.location.pathname);
+        openModal(hashTab);
+    }
+
     if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
     if (authModal) {
         authModal.addEventListener('click', function(e) {
@@ -916,7 +927,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const token = localStorage.getItem('token');
             if (!token) {
                 alert('Пожалуйста, войдите в систему');
-                window.location.href = '../index.html';
+                openModal('login');
                 return;
             }
 
@@ -991,7 +1002,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (orderSelector) orderSelector.style.display = 'none';
         if (noOrders) {
             noOrders.style.display = 'block';
-            noOrders.innerHTML = '<p>Пожалуйста, войдите в систему</p><p><a href="../index.html">Войти</a></p>';
+            noOrders.innerHTML = '<p>Пожалуйста, войдите в систему</p><p><a href="../index.html#login">Войти</a></p>';
         }
         return;
     }
