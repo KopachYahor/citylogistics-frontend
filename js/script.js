@@ -399,8 +399,8 @@ document.addEventListener('DOMContentLoaded', function() {
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const name = document.getElementById('regUsername')?.value;
-            const email = document.getElementById('regEmail')?.value;
+            const name = document.getElementById('regUsername')?.value?.trim();
+            const email = document.getElementById('regEmail')?.value?.trim();
             const password = document.getElementById('regPassword')?.value;
             const confirmPassword = document.getElementById('regConfirmPassword')?.value;
             const role = document.getElementById('regRole')?.value || 'CLIENT';
@@ -408,6 +408,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!name || !email || !password) {
                 showMessage('Заполните все поля!', 'error');
+                return;
+            }
+            // Как в RegisterRequest на бэкенде: имя от 3 символов без учёта пробелов по краям
+            if (name.length < 3) {
+                showMessage('Имя должно быть не короче 3 символов!', 'error');
                 return;
             }
             if (role === 'DRIVER' && !phone) {
@@ -1082,6 +1087,12 @@ document.addEventListener('DOMContentLoaded', function() {
     if (createBtn) {
         createBtn.addEventListener('click', function(e) {
             e.preventDefault();
+            // Уже вошёл — ведём в свой кабинет, а не на регистрацию
+            if (localStorage.getItem('token')) {
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                window.location.href = pageUrl(user.role === 'DRIVER' ? 'driver-dashboard.html' : 'profile.html');
+                return;
+            }
             openModal('register');
         });
     }
