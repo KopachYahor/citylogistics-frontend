@@ -259,16 +259,16 @@ window.showProfileMenu = function() {
         </svg>
       </div>
       <div class="profile-info">
-        <h4>Привет, <span id="profileName">Пользователь</span>!</h4>
-        <p id="profileEmail">user@example.com</p>
+        <h4>Привет, <span class="profile-menu-name">Пользователь</span>!</h4>
+        <p class="profile-menu-email"></p>
       </div>
     </div>
     <div class="profile-menu-items">
-      <a href="../html/profile.html" class="menu-item" id="menuProfile">
+      <a href="${pageUrl('profile.html')}" class="menu-item profile-menu-link">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
           <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="#888"/>
         </svg>
-        <span id="menuProfileLabel">Мой профиль</span>
+        <span class="profile-menu-label">Мой профиль</span>
       </a>
       <button class="menu-item" id="menuSettings">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -287,19 +287,15 @@ window.showProfileMenu = function() {
 
     document.body.appendChild(menu);
 
+    // Ищем внутри меню, а не по id: на странице профиля id="profileEmail" уже занят полем формы
     const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const profileName = document.getElementById('profileName');
-    const profileEmail = document.getElementById('profileEmail');
-
-    if (profileName && user.name) profileName.textContent = user.name;
-    if (profileEmail && user.email) profileEmail.textContent = user.email;
+    if (user.name) menu.querySelector('.profile-menu-name').textContent = user.name;
+    menu.querySelector('.profile-menu-email').textContent = user.email || '';
 
     // Подменяем пункт под роль
-    const profileLink = document.getElementById('menuProfile');
-    const profileLabel = document.getElementById('menuProfileLabel');
-    if (profileLink && user.role === 'DRIVER') {
-        profileLink.href = '../html/driver-dashboard.html';
-        if (profileLabel) profileLabel.textContent = 'Кабинет водителя';
+    if (user.role === 'DRIVER') {
+        menu.querySelector('.profile-menu-link').href = pageUrl('driver-dashboard.html');
+        menu.querySelector('.profile-menu-label').textContent = 'Кабинет водителя';
     }
 
     setTimeout(() => {
