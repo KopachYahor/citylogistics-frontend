@@ -346,6 +346,29 @@ function showMessage(message, type = 'info') {
 // ============================================
 // РЕГИСТРАЦИЯ И ВХОД
 // ============================================
+
+// Сохраняет токен, узнаёт роль через /api/auth/me и возвращает страницу,
+// куда перейти: кабинет водителя или профиль клиента
+async function saveSession(token, name) {
+    localStorage.setItem('token', token);
+    try {
+        const meResp = await apiFetch('/auth/me');
+        if (meResp.ok) {
+            const me = await meResp.json();
+            localStorage.setItem('user', JSON.stringify({
+                email: me.email,
+                name: name || me.email.split('@')[0],
+                role: me.role,
+                driverId: me.driverId
+            }));
+            return pageUrl(me.role === 'DRIVER' ? 'driver-dashboard.html' : 'profile.html');
+        }
+    } catch (e) {
+        console.error('Не удалось получить /auth/me:', e);
+    }
+    // Роль узнать не удалось: профиль сам проверит её и при необходимости перенаправит
+    return pageUrl('profile.html');
+}
 document.addEventListener('DOMContentLoaded', function() {
 
     // --- Регистрация ---
@@ -424,40 +447,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
 
-                localStorage.setItem('token', loginData.token);
-                localStorage.setItem('user', JSON.stringify({ email, name }));
-
                 showMessage('Регистрация успешна!', 'success');
 
                 const successOverlay = document.getElementById('successOverlay');
                 if (successOverlay) successOverlay.style.display = 'flex';
 
-// Узнаём роль через /api/auth/me
-// Определяем, где мы находимся, чтобы правильно построить путь
-                const isInsideHtml = window.location.pathname.includes('/html/');
-                const basePrefix = isInsideHtml ? '' : 'html/';
-
-                let redirectUrl = basePrefix + 'profile.html';
-                let driverRedirectUrl = basePrefix + 'driver-dashboard.html';
-                try {
-                    const meResp = await fetch(`${API_URL}/auth/me`, {
-                        headers: { 'Authorization': `Bearer ${loginData.token}` }
-                    });
-                    if (meResp.ok) {
-                        const me = await meResp.json();
-                        localStorage.setItem('user', JSON.stringify({
-                            email: me.email,
-                            name: me.username || me.email.split('@')[0],
-                            role: me.role,
-                            driverId: me.driverId
-                        }));
-                        if (me.role === 'DRIVER') {
-                            redirectUrl = driverRedirectUrl;
-                        }
-                    }
-                } catch (e) {
-                    console.error('Не удалось получить /auth/me:', e);
-                }
+                // Имя бэкенд не возвращает, поэтому сохраняем введённое при регистрации
+                const redirectUrl = await saveSession(loginData.token, name);
 
                 setTimeout(() => {
                     const authModal = document.getElementById('authModal');
@@ -512,37 +508,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (response.ok && data.token) {
                     showMessage('Вход выполнен успешно!', 'success');
 
-                    localStorage.setItem('token', data.token);
-                    localStorage.setItem('user', JSON.stringify({
-                        email,
-                        name: email.split('@')[0]
-                    }));
-
-// Узнаём роль через /api/auth/me
-                    const isInsideHtml = window.location.pathname.includes('/html/');
-                    const basePrefix = isInsideHtml ? '' : 'html/';
-
-                    let redirectUrl = basePrefix + 'profile.html';
-                    let driverRedirectUrl = basePrefix + 'driver-dashboard.html';
-                    try {
-                        const meResp = await fetch(`${API_URL}/auth/me`, {
-                            headers: { 'Authorization': `Bearer ${data.token}` }
-                        });
-                        if (meResp.ok) {
-                            const me = await meResp.json();
-                            localStorage.setItem('user', JSON.stringify({
-                                email: me.email,
-                                name: me.username || me.email.split('@')[0],
-                                role: me.role,
-                                driverId: me.driverId
-                            }));
-                            if (me.role === 'DRIVER') {
-                                redirectUrl = driverRedirectUrl;
-                            }
-                        }
-                    } catch (e) {
-                        console.error('Не удалось получить /auth/me:', e);
-                    }
+                    const redirectUrl = await saveSession(data.token);
 
                     setTimeout(() => {
                         const authModal = document.getElementById('authModal');
