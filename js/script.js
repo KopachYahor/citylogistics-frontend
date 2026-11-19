@@ -3,6 +3,44 @@
 // ============================================
 const API_URL = 'http://localhost:8080/api';
 
+// Страницы лежат в корне (index.html) и в html/. Пути строим от текущей страницы,
+// чтобы сайт работал, даже если открыт не из корня сервера
+const ROOT = window.location.pathname.includes('/html/') ? '../' : '';
+
+function pageUrl(page) {
+    return page === 'index.html' ? ROOT + 'index.html' : ROOT + 'html/' + page;
+}
+
+function clearSession() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+}
+
+// Токен истёк или недействителен: выходим и открываем окно входа на главной
+function goToLogin() {
+    clearSession();
+    window.location.href = pageUrl('index.html') + '#login';
+}
+
+// Тело ответа как JSON. Если сервер вернул не JSON (например, HTML-страницу ошибки), будет {}
+function readJson(response) {
+    return response.json().catch(() => ({}));
+}
+
+// Запрос к API с токеном. На 401 сразу уводит на вход: вызывающему коду
+// возвращается промис, который никогда не завершится, потому что страница уже уходит
+async function apiFetch(path, options = {}) {
+    const response = await fetch(API_URL + path, {
+        ...options,
+        headers: { ...authHeaders(), ...(options.headers || {}) }
+    });
+    if (response.status === 401) {
+        goToLogin();
+        return new Promise(() => {});
+    }
+    return response;
+}
+
 // ============================================
 // АВТОПОДСВЕТКА АКТИВНОГО ПУНКТА МЕНЮ
 // ============================================
@@ -365,7 +403,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // API ждёт name, email, password, role, а для водителя ещё phone (RegisterRequest)
                     body: JSON.stringify({ name, email, password, role, phone: role === 'DRIVER' ? phone : null })
                 });
-                const registerData = await registerResp.json().catch(() => ({}));
+                const registerData = await readJson(registerResp);
 
                 if (!registerResp.ok) {
                     // ошибки API приходят в поле error
@@ -379,7 +417,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
-                const loginData = await loginResp.json();
+                const loginData = await readJson(loginResp);
 
                 if (!loginResp.ok || !loginData.token) {
                     showMessage(loginData.error || 'Вход не удался', 'error');
@@ -470,7 +508,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
-                const data = await response.json();
+                const data = await readJson(response);
                 if (response.ok && data.token) {
                     showMessage('Вход выполнен успешно!', 'success');
 
@@ -623,32 +661,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // ВЫХОД
 // ============================================
 function logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.location.href = '../index.html';
-}
-
-// ============================================
-// ПОЛУЧЕНИЕ ДАННЫХ ПОЛЬЗОВАТЕЛЯ (для profile.html)
-// ============================================
-async function getUserData() {
-    const token = localStorage.getItem('token');
-    if (!token) return null;
-
-    try {
-        const response = await fetch(`${API_URL}/auth/me`, {
-            headers: authHeaders()
-        });
-        if (response.ok) {
-            return await response.json();
-        }
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        return null;
-    } catch (error) {
-        console.error('Ошибка получения данных:', error);
-        return null;
-    }
+    clearSession();
+    window.location.href = pageUrl('index.html');
 }
 // ============================================
 // ЛОГИКА СТРАНИЦЫ ПРОФИЛЯ (profile.html)
@@ -666,7 +680,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!ordersCount) return;
 
         try {
-            const resp = await fetch(`${API_URL}/orders/my`, { headers: authHeaders() });
+            const resp = await apiFetch('/orders/my');
             if (!resp.ok) return;
             const orders = await resp.json();
             if (!Array.isArray(orders)) return;
@@ -788,7 +802,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 loaded = true;
                 const list = document.getElementById('orderHistoryList');
                 try {
-                    const resp = await fetch(`${API_URL}/orders/my`, { headers: authHeaders() });
+                    const resp = await apiFetch('/orders/my');
                     if (!resp.ok) throw new Error('status ' + resp.status);
                     const orders = await resp.json();
 
@@ -934,13 +948,12 @@ document.addEventListener('DOMContentLoaded', function() {
             saveBtn.textContent = 'Сохранение...';
 
             try {
-                const response = await fetch(`${API_URL}/orders`, {
+                const response = await apiFetch('/orders', {
                     method: 'POST',
-                    headers: authHeaders(),
                     body: JSON.stringify(orderData)
                 });
 
-                const data = await response.json();
+                const data = await readJson(response);
 
                 if (response.ok) {
                     alert('Заказ сохранён!');
@@ -984,21 +997,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     try {
-        const response = await fetch(`${API_URL}/orders/my`, {
-            headers: authHeaders()
-        });
-
+        const response = await apiFetch('/orders/my');
         if (!response.ok) {
-            if (response.status === 401) {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                window.location.href = '../index.html';
+            if (noOrders) {
+                noOrders.style.display = 'block';
+                noOrders.innerHTML = '<p>Не удалось загрузить заказы</p>';
             }
+            if (orderSelector) orderSelector.style.display = 'none';
             return;
         }
 
         const orders = await response.json();
-        console.log('📋 Заказы:', orders);
 
         if (!Array.isArray(orders) || orders.length === 0) {
             if (orderSelector) orderSelector.style.display = 'none';
