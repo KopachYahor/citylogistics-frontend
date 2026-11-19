@@ -651,6 +651,91 @@ function logout() {
     window.location.href = pageUrl('index.html');
 }
 // ============================================
+// ЗАКАЗЫ В ПРОФИЛЕ КЛИЕНТА (profile.html)
+// ============================================
+const ACTIVE_STATUSES = ['NEW', 'ACCEPTED', 'IN_TRANSIT', 'ARRIVED'];
+
+// CSS-класс бейджа в истории (стили в profile.html)
+const HISTORY_BADGE = {
+    NEW: 'status-pending', ACCEPTED: 'status-pending',
+    IN_TRANSIT: 'status-in-transit', ARRIVED: 'status-in-transit',
+    DELIVERED: 'status-delivered', CANCELLED: 'status-cancelled'
+};
+
+async function loadProfileOrders() {
+    const list = document.getElementById('orderHistoryList');
+    let orders;
+    try {
+        const resp = await apiFetch('/orders/my');
+        if (!resp.ok) throw new Error('status ' + resp.status);
+        orders = await resp.json();
+    } catch (e) {
+        console.error('Ошибка загрузки заказов:', e);
+        if (list) list.innerHTML = '<div class="order-history-empty"><p>Не удалось загрузить заказы</p></div>';
+        return;
+    }
+    orders.sort((a, b) => b.id - a.id); // новые сверху
+
+    // Статистика
+    document.getElementById('ordersCount').textContent = orders.length;
+    document.getElementById('completedOrders').textContent = orders.filter(o => o.status === 'DELIVERED').length;
+    document.getElementById('activeOrders').textContent = orders.filter(o => ACTIVE_STATUSES.includes(o.status)).length;
+
+    // «Текущий заказ» — самый новый незавершённый
+    const current = orders.find(o => ACTIVE_STATUSES.includes(o.status));
+    document.getElementById('currentOrderStatus').textContent = current
+        ? `Заказ №${current.id}: ${STATUS_LABELS[current.status].toLowerCase()}`
+        : 'Нет активных заказов';
+
+    // История. Отменить можно только заказ без водителя (NEW): так проверяет и бэкенд
+    if (!list) return;
+    if (orders.length === 0) {
+        list.innerHTML = '<div class="order-history-empty"><p>У вас пока нет заказов</p></div>';
+        return;
+    }
+    list.innerHTML = orders.map(o => {
+        const date = o.createdAt ? new Date(o.createdAt).toLocaleDateString('ru-RU') : '';
+        const cancelBtn = o.status === 'NEW'
+            ? `<button class="order-cancel-btn" data-order-id="${escapeHtml(o.id)}">Отменить</button>`
+            : '';
+        return `
+            <div class="order-item">
+                <div class="order-info">
+                    <h3>Заказ №${escapeHtml(o.id)}</h3>
+                    <p>${escapeHtml(o.fromAddress)} → ${escapeHtml(o.toAddress)}${date ? ' • ' + date : ''}</p>
+                </div>
+                <div class="order-item-actions">
+                    ${cancelBtn}
+                    <span class="order-status ${HISTORY_BADGE[o.status] || 'status-pending'}">${escapeHtml(STATUS_LABELS[o.status] || o.status)}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    list.querySelectorAll('.order-cancel-btn').forEach(btn =>
+        btn.addEventListener('click', () => cancelOrder(btn)));
+}
+
+async function cancelOrder(btn) {
+    const orderId = btn.dataset.orderId;
+    if (!confirm(`Отменить заказ №${orderId}?`)) return;
+
+    btn.disabled = true;
+    try {
+        const resp = await apiFetch(`/orders/${orderId}/cancel`, { method: 'PATCH' });
+        if (!resp.ok) {
+            // Например, 400: водителя уже назначили, и отменить заказ нельзя
+            const data = await readJson(resp);
+            alert('Не удалось отменить заказ: ' + (data.error || resp.status));
+        }
+    } catch (e) {
+        console.error('Ошибка отмены:', e);
+        alert('Ошибка подключения к серверу');
+    }
+    await loadProfileOrders();
+}
+
+// ============================================
 // ЛОГИКА СТРАНИЦЫ ПРОФИЛЯ (profile.html)
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
@@ -658,36 +743,17 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!isProfilePage) return;
 
 
-    // Загрузка статистики заказов
-    (async function loadOrderStats() {
-        const ordersCount = document.getElementById('ordersCount');
-        const completedOrders = document.getElementById('completedOrders');
-        const activeOrders = document.getElementById('activeOrders');
-        if (!ordersCount) return;
-
-        try {
-            const resp = await apiFetch('/orders/my');
-            if (!resp.ok) return;
-            const orders = await resp.json();
-            if (!Array.isArray(orders)) return;
-
-            ordersCount.textContent = orders.length;
-            completedOrders.textContent = orders.filter(o => o.status === 'DELIVERED').length;
-            activeOrders.textContent = orders.filter(o =>
-                ['NEW','ACCEPTED','IN_TRANSIT','ARRIVED'].includes(o.status)).length;
-        } catch (e) {
-            console.error('Ошибка статистики:', e);
-        }
-    })();
-
     const token = localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-    // Если нет токена — на главную
+    // Без токена — на вход. Проверяем до любых запросов к API
     if (!token) {
-        window.location.href = '../index.html';
+        goToLogin();
         return;
     }
+
+    // Заказы грузим один раз и показываем в трёх местах: статистика, «Текущий заказ», история
+    loadProfileOrders();
 
     // --- Заполнение шапки профиля ---
     const userName = document.getElementById('userName');
@@ -776,54 +842,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const historyBtn = document.getElementById('historyBtn');
     const orderHistory = document.getElementById('orderHistory');
     if (historyBtn && orderHistory) {
-        let loaded = false;
-
-        historyBtn.addEventListener('click', async function() {
+        historyBtn.addEventListener('click', function() {
             const isHidden = orderHistory.style.display === 'none' || !orderHistory.style.display;
             orderHistory.style.display = isHidden ? 'block' : 'none';
             historyBtn.querySelector('span').textContent = isHidden ? 'Скрыть историю' : 'История заказов';
-
-            // Загружаем один раз при первом открытии
-            if (isHidden && !loaded) {
-                loaded = true;
-                const list = document.getElementById('orderHistoryList');
-                try {
-                    const resp = await apiFetch('/orders/my');
-                    if (!resp.ok) throw new Error('status ' + resp.status);
-                    const orders = await resp.json();
-
-                    if (!Array.isArray(orders) || orders.length === 0) {
-                        list.innerHTML = `<div class="order-history-empty"><p>У вас пока нет заказов</p></div>`;
-                        return;
-                    }
-
-                    const statusMap = {
-                        'NEW':        { label: 'Ожидает', cls: 'status-pending' },
-                        'ACCEPTED':   { label: 'Принят',  cls: 'status-pending' },
-                        'IN_TRANSIT': { label: 'В пути',  cls: 'status-in-transit' },
-                        'ARRIVED':    { label: 'Прибыл',  cls: 'status-in-transit' },
-                        'DELIVERED':  { label: 'Доставлен', cls: 'status-delivered' },
-                        'CANCELLED':  { label: 'Отменён', cls: 'status-pending' }
-                    };
-
-                    list.innerHTML = orders.map(o => {
-                        const info = statusMap[o.status] || { label: o.status, cls: 'status-pending' };
-                        const date = o.createdAt ? new Date(o.createdAt).toLocaleDateString('ru-RU') : '';
-                        return `
-                        <div class="order-item">
-                            <div class="order-info">
-                                <h3>Заказ №${o.id}</h3>
-                                <p>${escapeHtml(o.fromAddress)} → ${escapeHtml(o.toAddress)}${date ? ' • ' + date : ''}</p>
-                            </div>
-                            <span class="order-status ${info.cls}">${info.label}</span>
-                        </div>
-                    `;
-                    }).join('');
-                } catch (e) {
-                    console.error('Ошибка загрузки истории:', e);
-                    list.innerHTML = `<div class="order-history-empty"><p>Не удалось загрузить историю</p></div>`;
-                }
-            }
         });
     }
 
@@ -831,7 +853,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const repeatBtn = document.getElementById('repeatOrderBtn');
     if (repeatBtn) {
         repeatBtn.addEventListener('click', function() {
-            window.location.href = '../html/order.html';
+            window.location.href = pageUrl('order.html');
         });
     }
 
@@ -839,7 +861,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const addressesBtn = document.getElementById('addressesBtn');
     if (addressesBtn) {
         addressesBtn.addEventListener('click', function() {
-            alert('Функция "Мои адреса" будет доступна soon!');
+            alert('Функция «Мои адреса» будет доступна в следующем обновлении');
         });
     }
 
