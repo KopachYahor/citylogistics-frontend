@@ -25,14 +25,14 @@ function pageUrl(page) {
 }
 
 function clearSession() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    ['token', 'refresh_token', 'id_token', 'token_expires_at', 'user']
+        .forEach(key => localStorage.removeItem(key));
 }
 
-// Токен истёк или недействителен: выходим и открываем окно входа на главной
+// Токен истёк и не обновился или недействителен: выходим и сразу идём на вход в Keycloak (js/auth.js)
 function goToLogin() {
     clearSession();
-    window.location.href = pageUrl('index.html') + '#login';
+    startLogin();
 }
 
 // Тело ответа как JSON. Если сервер вернул не JSON (например, HTML-страницу ошибки), будет {}
@@ -40,9 +40,14 @@ function readJson(response) {
     return response.json().catch(() => ({}));
 }
 
-// Запрос к API с токеном. На 401 сразу уводит на вход: вызывающему коду
-// возвращается промис, который никогда не завершится, потому что страница уже уходит
+// Запрос к API с токеном. Перед запросом при необходимости обновляет токен (ensureFreshToken
+// в js/auth.js). На 401 сразу уводит на вход: вызывающему коду возвращается промис,
+// который никогда не завершится, потому что страница уже уходит
 async function apiFetch(path, options = {}) {
+    if (localStorage.getItem('token') && !(await ensureFreshToken())) {
+        goToLogin();
+        return new Promise(() => {});
+    }
     const response = await fetch(API_URL + path, {
         ...options,
         headers: { ...authHeaders(), ...(options.headers || {}) }
@@ -171,8 +176,9 @@ window.updateProfileIcon = function(isLoggedIn) {
 function openModal(defaultTab = 'login') {
     const authModal = document.getElementById('authModal');
     if (!authModal) {
-        // На этой странице окна входа нет: открываем его на главной
-        window.location.href = pageUrl('index.html') + '#' + defaultTab;
+        // На этой странице окна нет: вход — сразу на Keycloak, регистрация — в окне на главной
+        if (defaultTab === 'login') startLogin();
+        else window.location.href = pageUrl('index.html') + '#' + defaultTab;
         return;
     }
     document.body.style.overflow = 'hidden';
@@ -360,17 +366,18 @@ function showMessage(message, type = 'info') {
 // РЕГИСТРАЦИЯ И ВХОД
 // ============================================
 
-// Сохраняет токен, узнаёт роль через /api/auth/me и возвращает страницу,
-// куда перейти: кабинет водителя или профиль клиента
-async function saveSession(token, name) {
-    localStorage.setItem('token', token);
+// Токены уже получены от Keycloak (handleLoginCallback). Узнаём роль через /api/auth/me
+// и возвращаем страницу, куда перейти: кабинет водителя или профиль клиента
+async function finishLogin() {
     try {
         const meResp = await apiFetch('/auth/me');
         if (meResp.ok) {
             const me = await meResp.json();
+            // Имя хранит Keycloak и кладёт в токен (given_name)
+            const claims = tokenClaims();
             localStorage.setItem('user', JSON.stringify({
                 email: me.email,
-                name: name || me.email.split('@')[0],
+                name: claims.given_name || claims.name || me.email.split('@')[0],
                 role: me.role,
                 driverId: me.driverId
             }));
@@ -452,36 +459,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
 
-                // 2) Логин (бэк при регистрации токен не возвращает)
-                const loginResp = await fetch(`${API_URL}/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                const loginData = await readJson(loginResp);
-
-                if (!loginResp.ok || !loginData.token) {
-                    showMessage(loginData.error || 'Вход не удался', 'error');
-                    return;
-                }
-
                 showMessage('Регистрация успешна!', 'success');
-
                 const successOverlay = document.getElementById('successOverlay');
                 if (successOverlay) successOverlay.style.display = 'flex';
 
-                // Имя бэкенд не возвращает, поэтому сохраняем введённое при регистрации
-                const redirectUrl = await saveSession(loginData.token, name);
-
-                setTimeout(() => {
-                    const authModal = document.getElementById('authModal');
-                    if (authModal) {
-                        authModal.style.display = 'none';
-                        document.body.style.overflow = '';
-                    }
-                    if (successOverlay) successOverlay.style.display = 'none';
-                    window.location.href = redirectUrl;
-                }, 2000);
+                // 2) Вход: токен выдаёт только Keycloak, поэтому ведём на его страницу входа,
+                // email подставится сам (login_hint)
+                setTimeout(() => startLogin(email), 1500);
 
             } catch (error) {
                 console.error('Ошибка:', error);
@@ -495,58 +479,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- Вход ---
+    // Логин и пароль вводятся на странице Keycloak, а не здесь
     const loginForm = document.getElementById('loginFormElement');
     if (loginForm) {
-        loginForm.addEventListener('submit', async (e) => {
+        loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
-
-            const email = document.getElementById('loginEmail')?.value;
-            const password = document.getElementById('loginPassword')?.value;
-
-            if (!email || !password) {
-                showMessage('Заполните все поля!', 'error');
-                return;
-            }
-
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const btnText = submitBtn.querySelector('.btn-text');
-            const btnLoader = submitBtn.querySelector('.btn-loader');
-
-            if (btnText) btnText.style.display = 'none';
-            if (btnLoader) btnLoader.style.display = 'block';
-            submitBtn.disabled = true;
-
-            try {
-                const response = await fetch(`${API_URL}/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                const data = await readJson(response);
-                if (response.ok && data.token) {
-                    showMessage('Вход выполнен успешно!', 'success');
-
-                    const redirectUrl = await saveSession(data.token);
-
-                    setTimeout(() => {
-                        const authModal = document.getElementById('authModal');
-                        if (authModal) {
-                            authModal.style.display = 'none';
-                            document.body.style.overflow = '';
-                        }
-                        window.location.href = redirectUrl;
-                    }, 1500);
-                } else {
-                    showMessage(data.error || 'Неверный email или пароль', 'error');
-                }
-            } catch (error) {
-                console.error('Ошибка:', error);
-                showMessage('Ошибка подключения к серверу', 'error');
-            } finally {
-                if (btnText) btnText.style.display = 'block';
-                if (btnLoader) btnLoader.style.display = 'none';
-                submitBtn.disabled = false;
-            }
+            startLogin();
         });
     }
 });
@@ -574,6 +512,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Закрытие модалки ---
     const authModal = document.getElementById('authModal');
     const closeModalBtn = document.getElementById('closeModal');
+
+    // Вернулись со страницы входа Keycloak (index.html?code=...): меняем code на токены
+    if (window.location.search.includes('code=') || window.location.search.includes('error=')) {
+        handleLoginCallback().then(async ok => {
+            if (ok) {
+                window.location.href = await finishLogin();
+            } else {
+                openModal('login');
+                showMessage('Не удалось войти. Попробуйте ещё раз', 'error');
+            }
+        });
+    }
 
     // Пришли с другой страницы за входом или регистрацией (index.html#login)
     const hashTab = window.location.hash.slice(1);
@@ -651,9 +601,9 @@ document.addEventListener('DOMContentLoaded', function() {
 // ============================================
 // ВЫХОД
 // ============================================
+// Выход и из приложения, и из Keycloak (js/auth.js)
 function logout() {
-    clearSession();
-    window.location.href = pageUrl('index.html');
+    keycloakLogout();
 }
 // ============================================
 // ЗАКАЗЫ В ПРОФИЛЕ КЛИЕНТА (profile.html)

@@ -2137,3 +2137,10 @@ dialog::backdrop {
     color: #ff4444;
     background: rgba(255, 107, 107, 0.1);
 }
+/* Пояснение во вкладке «Вход»: сам вход — на странице Keycloak */
+.auth-hint {
+    margin: 0 0 20px;
+    font-size: 15px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.75);
+}
