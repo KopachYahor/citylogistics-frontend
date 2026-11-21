@@ -368,9 +368,20 @@ function showMessage(message, type = 'info') {
 
 // Токены уже получены от Keycloak (handleLoginCallback). Узнаём роль через /api/auth/me
 // и возвращаем страницу, куда перейти: кабинет водителя или профиль клиента
+// null — войти нельзя: страница уже уходит на выход из Keycloak
 async function finishLogin() {
     try {
-        const meResp = await apiFetch('/auth/me');
+        // Не apiFetch: на 401 он снова отправил бы на вход, а Keycloak по живой сессии
+        // сразу вернул бы обратно — бесконечный цикл перенаправлений
+        const meResp = await fetch(API_URL + '/auth/me', { headers: authHeaders() });
+        if (meResp.status === 401) {
+            // В Keycloak пользователь есть, а в приложении нет (например, регистрация не завершилась).
+            // Завершаем сессию Keycloak и показываем причину после возврата на главную
+            sessionStorage.setItem('login_error',
+                'Аккаунт найден в системе входа, но не зарегистрирован в CityLogistics. Обратитесь в поддержку');
+            keycloakLogout();
+            return null;
+        }
         if (meResp.ok) {
             const me = await meResp.json();
             // Имя хранит Keycloak и кладёт в токен (given_name)
@@ -517,12 +528,21 @@ document.addEventListener('DOMContentLoaded', function() {
     if (window.location.search.includes('code=') || window.location.search.includes('error=')) {
         handleLoginCallback().then(async ok => {
             if (ok) {
-                window.location.href = await finishLogin();
+                const target = await finishLogin();
+                if (target) window.location.href = target;
             } else {
                 openModal('login');
                 showMessage('Не удалось войти. Попробуйте ещё раз', 'error');
             }
         });
+    }
+
+    // Вход не удался на прошлом шаге (см. finishLogin): показываем причину один раз
+    const loginError = sessionStorage.getItem('login_error');
+    if (authModal && loginError) {
+        sessionStorage.removeItem('login_error');
+        openModal('login');
+        showMessage(loginError, 'error');
     }
 
     // Пришли с другой страницы за входом или регистрацией (index.html#login)
